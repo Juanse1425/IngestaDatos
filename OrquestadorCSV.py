@@ -1,11 +1,13 @@
+import csv
 import os
 import time
-import csv
-import unicodedata
 from datetime import datetime
-from ValidarCSV import validar_csv
-from S3Handler import upload_file_to_s3, obtener_facultad
+
+import unicodedata
+
 from LogHandler import generar_log
+from S3Handler import upload_file_to_s3, obtener_facultad
+from ValidarCSV import validar_csv
 
 # Configuración
 CARPETA_ARCHIVOS = './archivos/LandingZone/Programas'
@@ -16,6 +18,7 @@ columnas_obligatorias = [
     'Nombre del estudiante', 'Código del estudiante', 'Materia', 'Nota',
     'Periodo académico', 'Programa académico'
 ]
+
 
 def formatear_texto(texto):
     """Limpia el texto eliminando caracteres no ASCII, reemplazando espacios con guiones bajos y removiendo espacios en los extremos."""
@@ -31,6 +34,7 @@ def formatear_texto(texto):
 def limpiar_ascii(texto):
     """Convierte texto a ASCII, eliminando caracteres no compatibles con S3."""
     return unicodedata.normalize('NFKD', texto).encode('ascii', 'ignore').decode('ascii')
+
 
 def obtener_metadatos(file_path, facultad, programa, periodo):
     """Obtiene los metadatos de creación del archivo y la fecha y hora de subida, en formato ASCII."""
@@ -49,6 +53,7 @@ def obtener_metadatos(file_path, facultad, programa, periodo):
         'Periodo': limpiar_ascii(periodo)
     }
 
+
 def extraer_datos_csv(file_name):
     """Extrae el programa académico y el periodo académico de las primeras filas del CSV."""
     with open(file_name, mode='r', encoding='utf-8') as file:
@@ -60,6 +65,7 @@ def extraer_datos_csv(file_name):
                 return programa, periodo
     return None, None
 
+
 def procesar_archivos(archivos, bucket):
     """Procesa y sube cada archivo a S3 si cumple con la validación CSV."""
     for file_name in archivos:
@@ -69,13 +75,15 @@ def procesar_archivos(archivos, bucket):
             # Extraer programa y periodo del archivo CSV
             programa, periodo = extraer_datos_csv(file_name)
             if not programa or not periodo:
-                generar_log(f"No se pudo extraer 'Programa académico' o 'Periodo académico' del archivo '{file_basename}'.", 'error', bucket)
+                generar_log(
+                    f"No se pudo extraer 'Programa académico' o 'Periodo académico' del archivo '{file_basename}'.",
+                    'error', bucket)
                 continue
             programaFormateado = formatear_texto(programa)
 
             ano, semestre = periodo.split("-", 2)
 
-            facultad = obtener_facultad(BUCKET,programaFormateado)
+            facultad = obtener_facultad(BUCKET, programaFormateado)
             # Definir el nombre del objeto y los metadatos
             object_name = f'UQ/Raw/Academico/Facultades/Facultad={facultad}/Programa={programaFormateado}/Year={ano}/Semestre={semestre}/{file_basename}'
             metadatos = obtener_metadatos(file_name, facultad, programaFormateado, periodo)
@@ -89,16 +97,21 @@ def procesar_archivos(archivos, bucket):
         else:
             generar_log(f"El archivo CSV '{file_basename}' no es válido.", 'error', bucket)
 
+
 def iniciar_orquestador():
     """Inicia el orquestador que monitorea la carpeta y procesa los archivos en lotes."""
     while True:
         archivos = [os.path.join(CARPETA_ARCHIVOS, file) for file in os.listdir(CARPETA_ARCHIVOS) if
                     os.path.isfile(os.path.join(CARPETA_ARCHIVOS, file))]
 
-        procesar_archivos(archivos, BUCKET)
+        if len(archivos) > 0:
+            procesar_archivos(archivos, BUCKET)
+        else:
+            print("No hay ningun archivo que subir")
 
         # Esperar un tiempo antes de volver a revisar (ej. 10 segundos)
         time.sleep(10)
+
 
 if __name__ == "__main__":
     iniciar_orquestador()

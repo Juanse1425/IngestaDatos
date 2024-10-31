@@ -1,9 +1,10 @@
 import os
 import time
 from datetime import datetime
+
+from LogHandler import generar_log
 from S3Handler import upload_file_to_s3, obtener_centro_investigacion
 from Utils import calcular_tamano_total_archivos
-from LogHandler import generar_log
 
 # Configuración
 CARPETA_ARCHIVOS = './archivos/LandingZone/Investigaciones'
@@ -13,7 +14,7 @@ BUCKET = 'datalakeuq'
 lote_numero = 1
 
 
-def obtener_metadatos(file_path,lote,centro_investigacion,grupo_investigacion,nombre_proyecto):
+def obtener_metadatos(file_path, lote, centro_investigacion, grupo_investigacion, nombre_proyecto):
     """Obtiene los metadatos de creación del archivo y la fecha y hora de subida."""
     # Fecha y hora de creación del archivo
     fecha_creacion = datetime.fromtimestamp(os.path.getctime(file_path)).strftime("%Y-%m-%d")
@@ -57,7 +58,7 @@ def procesar_lote(archivos, bucket):
             continue
 
         # Crear metadatos
-        metadatos = obtener_metadatos(file_name,lote,centro_investigacion,grupo_investigacion,nombre_proyecto)
+        metadatos = obtener_metadatos(file_name, lote, centro_investigacion, grupo_investigacion, nombre_proyecto)
         object_name = f'UQ/Raw/Academico/Investigacion/Centro_Investigacion={centro_investigacion}/Grupo_Investigacion={grupo_investigacion}/{grupo_investigacion}={nombre_proyecto}/{nombre_archivo}'
 
         # Subir archivo a S3 con metadatos y eliminarlo si tiene éxito

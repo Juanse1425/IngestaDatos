@@ -1,26 +1,21 @@
-# log_handler.py
 import logging
 import os
-import time
 import boto3
 from botocore.exceptions import NoCredentialsError
 from datetime import datetime
 
-# Variable global para el archivo de log
-log_file = ''
+# Configuración global del archivo de log
+log_file = os.path.join(os.getcwd(), 'logs', 'log_generico.log')  # Carpeta 'logs' en el directorio actual
 
-def configurar_logger():
-    global log_file  # Declarar log_file como global
-    current_directory = os.path.join(os.getcwd(), 'logs')  # Carpeta 'logs' en el directorio actual
-    log_file = os.path.join(current_directory, 'log_generico.log')  # Nombre genérico
+# Crear la carpeta 'logs' si no existe
+os.makedirs(os.path.dirname(log_file), exist_ok=True)
 
-    logging.basicConfig(filename=log_file, level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename=log_file, level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 def generar_log(mensajes, nivel, bucket):
     """Generar un log con los mensajes dados"""
-    configurar_logger()
-
     if nivel == 'info':
         logging.info(mensajes)
     elif nivel == 'error':
@@ -28,11 +23,13 @@ def generar_log(mensajes, nivel, bucket):
 
     upload_log_to_s3(bucket)
 
+
 def contiene_errores_log(log_file):
     """Verificar si el archivo de log contiene errores"""
     with open(log_file, 'r') as file:
         logs = file.read()
         return "ERROR" in logs
+
 
 def upload_log_to_s3(bucket):
     """Subir el archivo de log a S3"""
@@ -60,9 +57,9 @@ def upload_log_to_s3(bucket):
     except NoCredentialsError:
         print("Credenciales no disponibles")
 
+
 def eliminar_log_local():
     """Eliminar el archivo de log local después de subirlo a S3"""
-    global log_file  # Declarar log_file como global
     try:
         logging.shutdown()  # Cerrar el archivo de log antes de eliminarlo
         os.remove(log_file)
