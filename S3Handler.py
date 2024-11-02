@@ -5,8 +5,8 @@ from botocore.exceptions import NoCredentialsError
 # Configuración segura de credenciales
 s3_client = boto3.client(
         's3',
-        aws_access_key_id='AKIAX3DNHBT2NAAYI5QC',  # Reemplaza con tu clave de acceso
-        aws_secret_access_key='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',  # Reemplaza con tu clave secreta
+        aws_access_key_id='Clave de acceso',  # Reemplaza con tu clave de acceso
+        aws_secret_access_key='Clave secreta',  # Reemplaza con tu clave secreta
         region_name='us-east-2'
     )
 
